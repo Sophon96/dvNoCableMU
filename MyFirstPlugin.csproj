@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <AssemblyName>MyFirstPlugin</AssemblyName>
     <Description>My first plugin</Description>
-    <Version>1.0.0</Version>
+    <Version>0.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -19,10 +19,20 @@
     <Reference Include="DV.ThingTypes" />
     <Reference Include="DV.Utils" />
     <Reference Include="UnityEngine.UI" />
-    
-    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-    <PackageReference Include="BepInEx.Core" Version="5.*" />
-    <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
-    <PackageReference Include="UnityEngine.Modules" Version="2019.4.40" IncludeAssets="compile" />
+    <Reference Include="UnityEngine.IMGUIModule" />
+
+    <Reference Include="UnityEngine" />
+    <Reference Include="UnityEngine.CoreModule" />
+
+    <PackageReference Include="UnityModManager" Version="0.27.2" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <!-- Copy to build folder -->
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="build/"/>
+
+    <!-- Package after Release build -->
+    <Exec Condition="'$(ConfigurationName)' == 'Release' And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1)&quot;"/>
+    <Exec Condition="'$(ConfigurationName)' == 'Release' And '$(OS)' != 'Windows_NT'" Command="pwsh  -Command &quot;(../package.ps1)&quot;"/>
+  </Target>
 </Project>

@@ -1,0 +1,9 @@
+﻿{
+  "Id": "MyFirstPlugin",
+  "DisplayName": "My First Plugin",
+  "Author": "Sophon96",
+  "Version": "0.1.0",
+  "AssemblyName": "MyFirstPlugin.dll",
+  "EntryMethod": "MyFirstPlugin.Plugin.Load",
+  "ManagerVersion": "0.27.3"
+}

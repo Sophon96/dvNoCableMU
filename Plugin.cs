@@ -1,30 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using BepInEx;
 using DV.ThingTypes;
+using HarmonyLib;
 using UnityEngine;
+using UnityModManagerNet;
 
 namespace MyFirstPlugin;
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
-public class Plugin : BaseUnityPlugin
+public static class Plugin
 {
-    private bool _loaded;
-    private LocoWrapper? _currentLoco;
+    private static bool _loaded;
+    private static UnityModManager.ModEntry.ModLogger _logger = null!;
+    
+    private static LocoWrapper? _currentLoco;
+    private static readonly List<LocoWrapper> Locos = new();
 
-    private readonly List<LocoWrapper> _locos = new();
-
-    private void Awake()
+    public static bool Load(UnityModManager.ModEntry modEntry)
     {
         // Plugin startup logic
-        Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
+        _logger = modEntry.Logger;
+        
+        var harmony = new Harmony(modEntry.Info.Id);
+        harmony.PatchAll();
+        
         WorldStreamingInit.LoadingFinished += OnLoadingFinished;
         PlayerManager.CarChanged += OnCarChanged;
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
+
+        // wtf do these actually do???
+        modEntry.OnFixedGUI = OnGUI;
+        modEntry.OnUpdate = Update;
+        
+        _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
+
+        return true;
     }
 
-    private void OnGUI()
+    private static void OnGUI(UnityModManager.ModEntry modEntry)
     {
         if (!_loaded) return;
 
@@ -37,11 +49,11 @@ public class Plugin : BaseUnityPlugin
 
         GUILayout.BeginHorizontal("Locomotives", GUIStyle.none);
 
-        if (_locos.Count == 0)
+        if (Locos.Count == 0)
             GUILayout.Label("None registered");
         else
         {
-            foreach (var loco in _locos)
+            foreach (var loco in Locos)
             {
                 GUILayout.BeginVertical();
 
@@ -96,21 +108,21 @@ public class Plugin : BaseUnityPlugin
 
                 if (GUILayout.Button("Unregister"))
                 {
-                    _locos.Remove(loco);
+                    Locos.Remove(loco);
                 }
 
                 GUILayout.EndVertical();
             }
         }
 
-        if (_locos.Count < 6)
+        if (Locos.Count < 6)
         {
             if (GUILayout.Button("Register"))
             {
-                if (_currentLoco is not null && !_locos.Contains(_currentLoco))
+                if (_currentLoco is not null && !Locos.Contains(_currentLoco))
                 {
-                    Logger.LogInfo("\"Register\" button pressed. Registering new locomotive...");
-                    _locos.Add(_currentLoco);
+                    modEntry.Logger.Log("\"Register\" button pressed. Registering new locomotive...");
+                    Locos.Add(_currentLoco);
                 }
             }
         }
@@ -120,7 +132,7 @@ public class Plugin : BaseUnityPlugin
         GUILayout.EndArea();
     }
 
-    private void OnLoadingFinished()
+    private static void OnLoadingFinished()
     {
         if (PlayerManager.Car is not null &&
             PlayerManager.Car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
@@ -131,32 +143,32 @@ public class Plugin : BaseUnityPlugin
         _loaded = true;
     }
 
-    private void OnUnloadRequested()
+    private static void OnUnloadRequested()
     {
         _currentLoco = null;
         _loaded = false;
     }
 
-    private void OnCarChanged(TrainCar? car)
+    private static void OnCarChanged(TrainCar? car)
     {
         if (car is null)
         {
             _currentLoco = null;
-            Logger.LogInfo("Loco changed to null.");
+            _logger.Log("Loco changed to null.");
         }
         else if (car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
         {
             _currentLoco = new LocoWrapper(car);
-            Logger.LogInfo("Loco changed. ID: " + _currentLoco.ID + "; Type: " + _currentLoco.Type);
+            _logger.Log("Loco changed. ID: " + _currentLoco.ID + "; Type: " + _currentLoco.Type);
         }
     }
 
-    private void Update()
+    private static void Update(UnityModManager.ModEntry modEntry, float value)
     {
-        if (!_loaded || _currentLoco is null || !_locos.Contains(_currentLoco)) return;
+        if (!_loaded || _currentLoco is null || !Locos.Contains(_currentLoco)) return;
         
         // hopefully _currentLoco doesn't change in a frame (it shouldn't) (source: my ass)
-        foreach (var loco in _locos.Where(loco => loco != _currentLoco))
+        foreach (var loco in Locos.Where(loco => loco != _currentLoco))
         {
             loco.Throttle = _currentLoco.Throttle;
             loco.Brake = _currentLoco.Brake;
