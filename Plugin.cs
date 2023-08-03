@@ -5,7 +5,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityModManagerNet;
 
-namespace MyFirstPlugin;
+namespace dvNoCableMU;
 
 public static class Plugin
 {

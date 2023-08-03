@@ -3,7 +3,7 @@ using DV.Simulation.Cars;
 using DV.ThingTypes;
 using LocoSim.Implementations;
 
-namespace MyFirstPlugin;
+namespace dvNoCableMU;
 
 public class LocoWrapper: IEquatable<LocoWrapper>
 {

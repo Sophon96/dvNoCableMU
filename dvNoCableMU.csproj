@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <AssemblyName>MyFirstPlugin</AssemblyName>
-    <Description>My first plugin</Description>
+    <AssemblyName>dvNoCableMU</AssemblyName>
+    <Description>Synchronize locomotives without connecting them!</Description>
     <Version>0.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <RootNamespace>dvNoCableMU</RootNamespace>
   </PropertyGroup>
   
   <PropertyGroup>
