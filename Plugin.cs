@@ -11,7 +11,7 @@ public static class Plugin
 {
     private static bool _loaded;
     private static UnityModManager.ModEntry.ModLogger _logger = null!;
-    
+
     private static LocoWrapper? _currentLoco;
     private static readonly List<LocoWrapper> Locos = new();
 
@@ -19,10 +19,10 @@ public static class Plugin
     {
         // Plugin startup logic
         _logger = modEntry.Logger;
-        
+
         var harmony = new Harmony(modEntry.Info.Id);
         harmony.PatchAll();
-        
+
         WorldStreamingInit.LoadingFinished += OnLoadingFinished;
         PlayerManager.CarChanged += OnCarChanged;
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
@@ -30,7 +30,7 @@ public static class Plugin
         // wtf do these actually do???
         modEntry.OnFixedGUI = OnGUI;
         modEntry.OnUpdate = Update;
-        
+
         _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
 
         return true;
@@ -40,7 +40,68 @@ public static class Plugin
     {
         if (!_loaded) return;
 
-        var richTextStyle = new GUIStyle
+        // // Height of an item
+        // const int itemHeight = 20;
+        //
+        // // Width of an item
+        // const int itemWidth = 300;
+        //
+        // // Padding around the window and for the title bar
+        // const int padding = 20;
+        // const int titleBarHeight = 20;
+
+        //var height = Locos.Count * itemHeight + titleBarHeight + 2 * padding;
+        //var width = itemWidth + 2 * padding;
+
+        GUILayout.Window(9600001, new Rect(20, 20, 300, 0), DrawWindow, "No Cable MU");
+        return;
+
+        void DrawWindow(int id)
+        {
+            //GUILayout.Space(titleBarHeight);
+            GUILayout.BeginVertical();
+
+            if (Locos.Count == 0)
+            {
+                GUILayout.Label("No Locomotives Paired!");
+            }
+            else
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Loco ID", GUILayout.Width(150));
+                GUILayout.Label("Temp", GUILayout.Width(100));
+                //GUILayout.Label("Status", GUILayout.Width(250));
+                GUILayout.EndHorizontal();
+
+                foreach (var loco in Locos)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(loco.ID, GUILayout.Width(150));
+                    GUILayout.Label(((int)loco.Temp).ToString(), GUILayout.Width(100));
+                    if (GUILayout.Button("X"))
+                    {
+                        Locos.Remove(loco);
+                    }
+
+                    GUILayout.EndHorizontal();
+                }
+            }
+
+            if (Locos.Count >= 8) return;
+            GUI.enabled = _currentLoco != null;
+            if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco))
+            {
+                modEntry.Logger.Log("\"Pair Locomotive\" button pressed. Adding locomotive...");
+                Locos.Add(_currentLoco);
+            }
+
+            GUI.enabled = true;
+            GUILayout.EndVertical();
+
+            GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        /*var richTextStyle = new GUIStyle
         {
             richText = true
         };
@@ -129,7 +190,7 @@ public static class Plugin
 
         GUILayout.EndHorizontal();
 
-        GUILayout.EndArea();
+        GUILayout.EndArea();*/
     }
 
     private static void OnLoadingFinished()
@@ -166,7 +227,7 @@ public static class Plugin
     private static void Update(UnityModManager.ModEntry modEntry, float value)
     {
         if (!_loaded || _currentLoco is null || !Locos.Contains(_currentLoco)) return;
-        
+
         // hopefully _currentLoco doesn't change in a frame (it shouldn't) (source: my ass)
         foreach (var loco in Locos.Where(loco => loco != _currentLoco))
         {
