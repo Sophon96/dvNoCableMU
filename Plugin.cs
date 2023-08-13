@@ -30,7 +30,7 @@ public static class Plugin
 
         // wtf do these actually do???
         modEntry.OnFixedGUI = OnGUI;
-        modEntry.OnUpdate = Update;
+        // modEntry.OnUpdate = Update;
 
         _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
 
@@ -76,6 +76,8 @@ public static class Plugin
                 //GUILayout.Label("Status", GUILayout.Width(250));
                 GUILayout.EndHorizontal();
 
+                var locosToRemove = new List<(LocoWrapper loco, bool reversed)>();
+
                 foreach (var loco in Locos)
                 {
                     GUILayout.BeginHorizontal();
@@ -85,19 +87,63 @@ public static class Plugin
 
                     if (GUILayout.Button("X"))
                     {
-                        Locos.Remove(loco);
+                        _logger.Log($"Queuing a locomotive to unregister. GUID: {loco.loco.GUID}; " +
+                                    $"ID: {loco.loco.ID}; Type: {loco.loco.Type}");
+                        locosToRemove.Add(loco);
                     }
 
                     GUILayout.EndHorizontal();
                 }
+
+                foreach (var loco in locosToRemove)
+                {
+                    Locos.Remove(loco);
+                    _logger.Log($"Unregistered a locomotive. GUID: {loco.loco.GUID}; " +
+                                $"ID: {loco.loco.ID}; Type: {loco.loco.Type}");
+
+                    if (Locos.IndexOf(loco) != 0) continue;
+                    loco.loco.TrainsetChanged -= OnFirstLocoTrainsetChanged;
+                    Locos[0].loco.TrainsetChanged += OnFirstLocoTrainsetChanged;
+                    _logger.Log(
+                        "Unregistered first locomotive, so TrainsetChanged event handler " +
+                        "was removed from it and added to the new first locomotive");
+                }
             }
 
-            if (Locos.Count >= 8) return;
+            // TODO: remove limit?
+            //if (Locos.Count >= 8) return;
             GUI.enabled = _currentLoco != null;
             if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco.Value))
             {
                 modEntry.Logger.Log("\"Pair Locomotive\" button pressed. Adding locomotive...");
-                Locos.Add(_currentLoco);
+                Locos.Add(_currentLoco.Value);
+
+                _currentLoco.Value.loco.ThrottleValueUpdated += f => Locos.ForEach(x => x.loco.Throttle = f);
+                _currentLoco.Value.loco.BrakeValueUpdated += f => Locos.ForEach(x => x.loco.Brake = f);
+                _currentLoco.Value.loco.IndBrakeValueUpdated += f => Locos.ForEach(x => x.loco.IndBrake = f);
+                _currentLoco.Value.loco.ReverserValueUpdated += f =>
+                    Locos.ForEach(x => x.loco.Reverser = !(_currentLoco.Value.reversed ^ x.reversed) ? f : 1 - f);
+                _currentLoco.Value.loco.SanderValueUpdated += f => Locos.ForEach(x => x.loco.Sander = f);
+                _currentLoco.Value.loco.DynBrakeValueUpdated += f => Locos.ForEach(x => x.loco.DynBrake = f);
+                
+                // Reset all controls
+                float maxBrake = Locos.Select(x => x.loco.Brake).Max();
+                float maxIndBrake = Locos.Select(x => x.loco.IndBrake).Max();
+                Locos.ForEach(x =>
+                {
+                    x.loco.Throttle = 0;
+                    x.loco.Reverser = 0;
+                    x.loco.DynBrake = 0;
+                    x.loco.Sander = 0;
+                    x.loco.Brake = maxBrake;
+                    x.loco.IndBrake = maxIndBrake;
+                });
+
+                if (Locos.Count == 1)
+                {
+                    _currentLoco.Value.loco.TrainsetChanged += OnFirstLocoTrainsetChanged;
+                    _logger.Log("Registered first locomotive, added TrainsetChanged event handler.");
+                }
             }
 
             GUI.enabled = true;
@@ -215,6 +261,7 @@ public static class Plugin
     private static void OnUnloadRequested()
     {
         _currentLoco = null;
+        Locos.Clear();
         _loaded = false;
     }
 
@@ -294,11 +341,14 @@ public static class Plugin
         throw new ArgumentOutOfRangeException(nameof(target),
             "Target locomotive is not connected to source locomotive!");
     }
+
+    // TODO: remove below
+    /*private static void Update(UnityModManager.ModEntry modEntry, float value)
     {
-        if (!_loaded || _currentLoco is null || !Locos.Contains(_currentLoco)) return;
+        if (!_loaded || _currentLoco is null || !Locos.Exists(x => x.loco == _currentLoco.loco)) return;
 
         // hopefully _currentLoco doesn't change in a frame (it shouldn't) (source: my ass)
-        foreach (var loco in Locos.Where(loco => loco != _currentLoco))
+        foreach (var loco in Locos.Select(x => x.loco).Where(loco => loco != (_currentLoco.loco)))
         {
             loco.Throttle = _currentLoco.Throttle;
             loco.Brake = _currentLoco.Brake;
@@ -320,5 +370,5 @@ public static class Plugin
                 loco.Reverser = _currentLoco.Reverser;
             }
         }
-    }
+    }*/
 }
