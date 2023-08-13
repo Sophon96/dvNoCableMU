@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DV.ThingTypes;
 using HarmonyLib;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -16,6 +17,7 @@ public static class Plugin
     private static (LocoWrapper loco, bool reversed)? _currentLoco;
     private static readonly List<(LocoWrapper loco, bool reversed)> Locos = new();
 
+    [UsedImplicitly]
     public static bool Load(UnityModManager.ModEntry modEntry)
     {
         // Plugin startup logic
@@ -27,10 +29,8 @@ public static class Plugin
         WorldStreamingInit.LoadingFinished += OnLoadingFinished;
         PlayerManager.CarChanged += OnCarChanged;
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
-
-        // wtf do these actually do???
+        
         modEntry.OnFixedGUI = OnGUI;
-        // modEntry.OnUpdate = Update;
 
         _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
 
@@ -41,25 +41,11 @@ public static class Plugin
     {
         if (!_loaded) return;
 
-        // // Height of an item
-        // const int itemHeight = 20;
-        //
-        // // Width of an item
-        // const int itemWidth = 300;
-        //
-        // // Padding around the window and for the title bar
-        // const int padding = 20;
-        // const int titleBarHeight = 20;
-
-        //var height = Locos.Count * itemHeight + titleBarHeight + 2 * padding;
-        //var width = itemWidth + 2 * padding;
-
         GUILayout.Window(9600001, new Rect(20, 20, 300, 0), DrawWindow, "No Cable MU");
         return;
 
         void DrawWindow(int id)
         {
-            //GUILayout.Space(titleBarHeight);
             GUILayout.BeginVertical();
 
             if (Locos.Count == 0)
@@ -73,7 +59,6 @@ public static class Plugin
                 GUILayout.Label("Temp", GUILayout.Width(100));
                 // TODO: remove this code below
                 GUILayout.Label("Reversed", GUILayout.Width(150));
-                //GUILayout.Label("Status", GUILayout.Width(250));
                 GUILayout.EndHorizontal();
 
                 var locosToRemove = new List<(LocoWrapper loco, bool reversed)>();
@@ -151,97 +136,6 @@ public static class Plugin
 
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
         }
-
-        /*var richTextStyle = new GUIStyle
-        {
-            richText = true
-        };
-
-        GUILayout.BeginArea(new Rect(0, 0, 1000, 800), "Distributed Power", "box");
-
-        GUILayout.BeginHorizontal("Locomotives", GUIStyle.none);
-
-        if (Locos.Count == 0)
-            GUILayout.Label("None registered");
-        else
-        {
-            foreach (var loco in Locos)
-            {
-                GUILayout.BeginVertical();
-
-                GUILayout.Label("Properties");
-
-                GUILayout.Label("ID: " + loco.ID);
-                GUILayout.Label("Type: " + loco.Type);
-                GUILayout.Label("Derailed: " + loco.Derailed);
-                GUILayout.Label("Exploded: " + loco.Exploded);
-                GUILayout.Label("Speed: " + loco.Speed);
-
-                GUILayout.Label("Brake: " + loco.Brake);
-                GUILayout.Label("Engine On: " + loco.EngineOn);
-                GUILayout.Label("Fuel Consumption: " + loco.FuelConsumption);
-                GUILayout.Label("Max RPM: " + loco.MaxRpm);
-                GUILayout.Label("RPM: " + loco.Rpm);
-                GUILayout.Label("Normalized RPM: " + loco.RpmNorm);
-                GUILayout.Label("Normalized Fuel: " + loco.FuelNorm);
-                GUILayout.Label("Fuel Capacity: " + loco.FuelCap);
-                GUILayout.Label("Individual Brake: " + loco.IndBrake);
-                GUILayout.Label("Oil Level Normalized: " + loco.OilNorm);
-                GUILayout.Label("Oil Capacity: " + loco.OilCap);
-                GUILayout.Label("Reverser: " + loco.Reverser);
-                GUILayout.Label("Sand Level Normalized: " + loco.SandNorm);
-                GUILayout.Label("Sand Capacity: " + loco.SandCap);
-                GUILayout.Label("Sander: " + loco.Sander);
-                GUILayout.Label("Throttle: " + loco.Throttle);
-                GUILayout.Label("Temperature: " + loco.Temp);
-
-                if (loco.Type is TrainCarType.LocoShunter or TrainCarType.LocoDiesel)
-                {
-                    GUILayout.Label("Traction Motor Amps: " + loco.TmAmps);
-                    GUILayout.Label("Normalized Traction Motor Amps: " + loco.TmAmpsNorm);
-                    GUILayout.Label("Max Traction Motor Amps: " + loco.TmMaxAmps);
-                    GUILayout.Label("Traction Motor RPM: " + loco.TmRpm);
-                    GUILayout.Label("Normalized Traction Motor RPM: " + loco.TmRpmNorm);
-                    GUILayout.Label("Traction Motor Fuse: " + loco.TmFuse);
-                    GUILayout.Label("Traction Motor State: " + loco.TmState);
-                }
-
-                if (loco.Type is TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
-                    GUILayout.Label("Dynamic Brake: " + loco.DynBrake);
-
-                if (loco.Type is TrainCarType.LocoDH4)
-                {
-                    GUILayout.Label("Fluid Coupler RPM: " + loco.FcRpm);
-                    GUILayout.Label("Normalized Fluid Coupler RPM: " + loco.FcRpmNorm);
-                    GUILayout.Label("Fluid Coupler Broken: " + loco.FcBroken);
-                    GUILayout.Label("Fluid Coupler Active Config: " + loco.FcActiveConfig);
-                    GUILayout.Label("Fluid Coupler Efficiency: " + loco.FcEfficiency);
-                }
-
-                if (GUILayout.Button("Unregister"))
-                {
-                    Locos.Remove(loco);
-                }
-
-                GUILayout.EndVertical();
-            }
-        }
-
-        if (Locos.Count < 6)
-        {
-            if (GUILayout.Button("Register"))
-            {
-                if (_currentLoco is not null && !Locos.Contains(_currentLoco))
-                {
-                    modEntry.Logger.Log("\"Register\" button pressed. Registering new locomotive...");
-                    Locos.Add(_currentLoco);
-                }
-            }
-        }
-
-        GUILayout.EndHorizontal();
-
-        GUILayout.EndArea();*/
     }
 
     private static void OnLoadingFinished()
@@ -308,7 +202,6 @@ public static class Plugin
         }
     }
 
-    private static void Update(UnityModManager.ModEntry modEntry, float value)
     private static void OnFirstLocoTrainsetChanged(Trainset trainset)
     {
         Locos.RemoveAll(loco => !trainset.cars.Exists(x => x.CarGUID == loco.loco.GUID));
@@ -341,34 +234,4 @@ public static class Plugin
         throw new ArgumentOutOfRangeException(nameof(target),
             "Target locomotive is not connected to source locomotive!");
     }
-
-    // TODO: remove below
-    /*private static void Update(UnityModManager.ModEntry modEntry, float value)
-    {
-        if (!_loaded || _currentLoco is null || !Locos.Exists(x => x.loco == _currentLoco.loco)) return;
-
-        // hopefully _currentLoco doesn't change in a frame (it shouldn't) (source: my ass)
-        foreach (var loco in Locos.Select(x => x.loco).Where(loco => loco != (_currentLoco.loco)))
-        {
-            loco.Throttle = _currentLoco.Throttle;
-            loco.Brake = _currentLoco.Brake;
-            loco.IndBrake = _currentLoco.IndBrake;
-            loco.Sander = _currentLoco.Sander;
-
-            if (loco.DynBrake > -1 && _currentLoco.DynBrake > -1)
-            {
-                loco.DynBrake = _currentLoco.DynBrake;
-            }
-
-            bool reversed = (loco.Speed * _currentLoco.Speed) < 0;
-            if (reversed)
-            {
-                loco.Reverser = 1 - _currentLoco.Reverser;
-            }
-            else
-            {
-                loco.Reverser = _currentLoco.Reverser;
-            }
-        }
-    }*/
 }
