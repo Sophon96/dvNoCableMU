@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DV.ThingTypes;
 using HarmonyLib;
@@ -12,8 +13,8 @@ public static class Plugin
     private static bool _loaded;
     private static UnityModManager.ModEntry.ModLogger _logger = null!;
 
-    private static LocoWrapper? _currentLoco;
-    private static readonly List<LocoWrapper> Locos = new();
+    private static (LocoWrapper loco, bool reversed)? _currentLoco;
+    private static readonly List<(LocoWrapper loco, bool reversed)> Locos = new();
 
     public static bool Load(UnityModManager.ModEntry modEntry)
     {
@@ -70,14 +71,18 @@ public static class Plugin
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Loco ID", GUILayout.Width(150));
                 GUILayout.Label("Temp", GUILayout.Width(100));
+                // TODO: remove this code below
+                GUILayout.Label("Reversed", GUILayout.Width(150));
                 //GUILayout.Label("Status", GUILayout.Width(250));
                 GUILayout.EndHorizontal();
 
                 foreach (var loco in Locos)
                 {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label(loco.ID, GUILayout.Width(150));
-                    GUILayout.Label(((int)loco.Temp).ToString(), GUILayout.Width(100));
+                    GUILayout.Label(loco.loco.ID, GUILayout.Width(150));
+                    GUILayout.Label(loco.loco.Temp.ToString("F1"), GUILayout.Width(100));
+                    GUILayout.Label(loco.reversed.ToString(), GUILayout.Width(150));
+
                     if (GUILayout.Button("X"))
                     {
                         Locos.Remove(loco);
@@ -89,7 +94,7 @@ public static class Plugin
 
             if (Locos.Count >= 8) return;
             GUI.enabled = _currentLoco != null;
-            if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco))
+            if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco.Value))
             {
                 modEntry.Logger.Log("\"Pair Locomotive\" button pressed. Adding locomotive...");
                 Locos.Add(_currentLoco);
@@ -195,10 +200,13 @@ public static class Plugin
 
     private static void OnLoadingFinished()
     {
+        _logger.Log("Now gaming.");
         if (PlayerManager.Car is not null &&
             PlayerManager.Car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
         {
-            _currentLoco = new LocoWrapper(PlayerManager.Car);
+            _currentLoco = (new LocoWrapper(PlayerManager.Car), false);
+            _logger.Log($"Started gaming with a locomotive. GUID: {_currentLoco.Value.loco.GUID}; " +
+                        $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
         }
 
         _loaded = true;
@@ -219,12 +227,73 @@ public static class Plugin
         }
         else if (car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
         {
-            _currentLoco = new LocoWrapper(car);
-            _logger.Log("Loco changed. ID: " + _currentLoco.ID + "; Type: " + _currentLoco.Type);
+            // No locomotives registered.
+            if (Locos.Count == 0)
+            {
+                _currentLoco = (new LocoWrapper(car), false);
+                _logger.Log($"Loco changed to unregistered one. GUID: {_currentLoco.Value.loco.GUID}; " +
+                            $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
+                return;
+            }
+
+            // Not in our trainset
+            if (!Locos[0].loco.Trainset.cars.Contains(car))
+            {
+                _currentLoco = null;
+                _logger.Log("Loco changed to one that is not in our trainset.");
+                return;
+            }
+
+            // Already registered locomotive.
+            if (Locos.Exists(x => x.loco.GUID == car.CarGUID))
+            {
+                _currentLoco = Locos.Find(x => x.loco.GUID == car.CarGUID);
+                _logger.Log($"Loco changed back to a registered one. GUID: {_currentLoco.Value.loco.GUID}; " +
+                            $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
+                return;
+            }
+
+            // Locomotive in train, but unregistered.
+            _currentLoco = (new LocoWrapper(car),
+                IsTrainCarRelativelyReversed(Locos[0].loco.Couplers, car) ^ Locos[0].reversed);
+            _logger.Log($"Loco changed to unregistered one. GUID: {_currentLoco.Value.loco.GUID}; " +
+                        $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
         }
     }
 
     private static void Update(UnityModManager.ModEntry modEntry, float value)
+    private static void OnFirstLocoTrainsetChanged(Trainset trainset)
+    {
+        Locos.RemoveAll(loco => !trainset.cars.Exists(x => x.CarGUID == loco.loco.GUID));
+        
+        // Possible that player connected the locomotive they're standing in
+        // without leaving the locomotive (e.g. using driving UI), so just check again
+        OnCarChanged(PlayerManager.Car);
+    }
+
+    private static bool IsTrainCarRelativelyReversed(Coupler[] couplers, TrainCar target)
+    {
+        var currentCoupler = couplers[0];
+        while (currentCoupler.IsCoupled())
+        {
+            currentCoupler = currentCoupler.coupledTo;
+            if (currentCoupler.train.CarGUID == target.CarGUID) return currentCoupler.isFrontCoupler;
+
+            currentCoupler = currentCoupler.GetOppositeCoupler();
+        }
+
+        currentCoupler = couplers[1];
+        while (currentCoupler.IsCoupled())
+        {
+            currentCoupler = currentCoupler.coupledTo;
+            if (currentCoupler.train.CarGUID == target.CarGUID) return !currentCoupler.isFrontCoupler;
+
+            currentCoupler = currentCoupler.GetOppositeCoupler();
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(target),
+            "Target locomotive is not connected to source locomotive!");
+    }
     {
         if (!_loaded || _currentLoco is null || !Locos.Contains(_currentLoco)) return;
 

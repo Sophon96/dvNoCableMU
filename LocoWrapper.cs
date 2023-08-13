@@ -57,6 +57,12 @@ public class LocoWrapper: IEquatable<LocoWrapper>
     public TrainCarType Type { get; }
     public Trainset Trainset { get; private set; }
 
+    public event Action<Trainset> TrainsetChanged
+    {
+        add => _loco.TrainsetChanged += value;
+        remove => _loco.TrainsetChanged += value;
+    }
+
 
     public LocoWrapper(TrainCar loco)
     {
@@ -134,10 +140,13 @@ public class LocoWrapper: IEquatable<LocoWrapper>
         Trainset = a;
     }
 
+    // TODO: consider removing all unused properties and respective ports (like half the code here lol)
     public bool Derailed => _loco.derailed;
     public bool Exploded => _loco.isExploded;
     public string ID => _loco.ID;
+    public string GUID => _loco.CarGUID;
     public float Speed => _loco.GetForwardSpeed();
+    public Coupler[] Couplers => _loco.couplers;
 
     public float Brake
     {
