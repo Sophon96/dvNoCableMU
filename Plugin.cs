@@ -86,6 +86,13 @@ public static class Plugin
                     Locos.Remove(loco);
                     _logger.Log($"Unregistered a locomotive. GUID: {loco.loco.GUID}; " +
                                 $"ID: {loco.loco.ID}; Type: {loco.loco.Type}");
+                    
+                    loco.loco.ThrottleValueUpdated -= OnLocoThrottleValueUpdated;
+                    loco.loco.BrakeValueUpdated -= OnLocoBrakeValueUpdated;
+                    loco.loco.IndBrakeValueUpdated -= OnLocoIndBrakeValueUpdated;
+                    loco.loco.ReverserValueUpdated -= OnLocoReverserValueUpdated;
+                    loco.loco.SanderValueUpdated -= OnLocoSanderValueUpdated;
+                    loco.loco.DynBrakeValueUpdated -= OnLocoDynBrakeValueUpdated;
 
                     if (Locos.IndexOf(loco) != 0) continue;
                     loco.loco.TrainsetChanged -= OnFirstLocoTrainsetChanged;
@@ -99,6 +106,7 @@ public static class Plugin
             GUI.enabled = _currentLoco != null;
             if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco.Value))
             {
+                // TODO: defer all of this into another method or some other optimization so that GUI doesn't flicker
                 modEntry.Logger.Log("\"Pair Locomotive\" button pressed. Adding locomotive...");
                 Locos.Add(_currentLoco.Value);
 
@@ -155,8 +163,19 @@ public static class Plugin
 
     private static void OnUnloadRequested()
     {
+        _logger.Log("Unloading!");
         _currentLoco = null;
         _statusMessage = "Plugin is unloaded (this message should not be seen)";
+
+        foreach (var (loco, _) in Locos)
+        {
+            loco.ThrottleValueUpdated -= OnLocoThrottleValueUpdated;
+            loco.BrakeValueUpdated -= OnLocoBrakeValueUpdated;
+            loco.IndBrakeValueUpdated -= OnLocoIndBrakeValueUpdated;
+            loco.ReverserValueUpdated -= OnLocoReverserValueUpdated;
+            loco.SanderValueUpdated -= OnLocoSanderValueUpdated;
+            loco.DynBrakeValueUpdated -= OnLocoDynBrakeValueUpdated;
+        }
 
         Locos.Clear();
         _loaded = false;
