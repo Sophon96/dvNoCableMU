@@ -17,6 +17,8 @@ public static class Plugin
     private static (LocoWrapper loco, bool reversed)? _currentLoco;
     private static readonly List<(LocoWrapper loco, bool reversed)> Locos = new();
 
+    private static string _statusMessage = "Unset (this shouldn't ever be seen)";
+
     [UsedImplicitly]
     public static bool Load(UnityModManager.ModEntry modEntry)
     {
@@ -129,6 +131,7 @@ public static class Plugin
             }
 
             GUI.enabled = true;
+            GUILayout.Label($"Status: {_statusMessage}");
             GUILayout.EndVertical();
 
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
@@ -146,12 +149,15 @@ public static class Plugin
                         $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
         }
 
+        _statusMessage = _currentLoco == null ? "Inactive" : "Ready to pair";
         _loaded = true;
     }
 
     private static void OnUnloadRequested()
     {
         _currentLoco = null;
+        _statusMessage = "Plugin is unloaded (this message should not be seen)";
+
         Locos.Clear();
         _loaded = false;
     }
@@ -161,6 +167,7 @@ public static class Plugin
         if (car is null)
         {
             _currentLoco = null;
+            _statusMessage = Locos.Count > 0 ? "Active" : "Inactive";
             _logger.Log("Loco changed to null.");
         }
         else if (car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
@@ -169,6 +176,7 @@ public static class Plugin
             if (Locos.Count == 0)
             {
                 _currentLoco = (new LocoWrapper(car), false);
+                _statusMessage = "Ready to pair";
                 _logger.Log($"Loco changed to unregistered one. GUID: {_currentLoco.Value.loco.GUID}; " +
                             $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
                 return;
@@ -178,6 +186,7 @@ public static class Plugin
             if (!Locos[0].loco.Trainset.cars.Contains(car))
             {
                 _currentLoco = null;
+                _statusMessage = Locos.Count > 0 ? "Active" : "Inactive";
                 _logger.Log("Loco changed to one that is not in our trainset.");
                 return;
             }
@@ -186,6 +195,7 @@ public static class Plugin
             if (Locos.Exists(x => x.loco.GUID == car.CarGUID))
             {
                 _currentLoco = Locos.Find(x => x.loco.GUID == car.CarGUID);
+                _statusMessage = "Active";
                 _logger.Log($"Loco changed back to a registered one. GUID: {_currentLoco.Value.loco.GUID}; " +
                             $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
                 return;
@@ -194,6 +204,7 @@ public static class Plugin
             // Locomotive in train, but unregistered.
             _currentLoco = (new LocoWrapper(car),
                 IsTrainCarRelativelyReversed(Locos[0].loco.Couplers, car) ^ Locos[0].reversed);
+            _statusMessage = "Ready to pair";
             _logger.Log($"Loco changed to unregistered one. GUID: {_currentLoco.Value.loco.GUID}; " +
                         $"ID: {_currentLoco.Value.loco.ID}; Type: {_currentLoco.Value.loco.Type}");
         }
