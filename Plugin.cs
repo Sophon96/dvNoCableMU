@@ -30,7 +30,7 @@ public static class Plugin
         WorldStreamingInit.LoadingFinished += OnLoadingFinished;
         PlayerManager.CarChanged += OnCarChanged;
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
-        
+
         modEntry.OnFixedGUI = OnGUI;
 
         _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
@@ -102,7 +102,7 @@ public static class Plugin
                         "was removed from it and added to the new first locomotive");
                 }
             }
-            
+
             GUI.enabled = _currentLoco != null;
             if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco.Value))
             {
@@ -232,7 +232,7 @@ public static class Plugin
     private static void OnFirstLocoTrainsetChanged(Trainset trainset)
     {
         Locos.RemoveAll(loco => !trainset.cars.Exists(x => x.CarGUID == loco.loco.GUID));
-        
+
         // Possible that player connected the locomotive they're standing in
         // without leaving the locomotive (e.g. using driving UI), so just check again
         OnCarChanged(PlayerManager.Car);
