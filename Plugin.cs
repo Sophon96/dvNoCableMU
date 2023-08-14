@@ -20,7 +20,6 @@ public static class Plugin
     [UsedImplicitly]
     public static bool Load(UnityModManager.ModEntry modEntry)
     {
-        // Plugin startup logic
         _logger = modEntry.Logger;
 
         var harmony = new Harmony(modEntry.Info.Id);
@@ -94,9 +93,7 @@ public static class Plugin
                         "was removed from it and added to the new first locomotive");
                 }
             }
-
-            // TODO: remove limit?
-            //if (Locos.Count >= 8) return;
+            
             GUI.enabled = _currentLoco != null;
             if (GUILayout.Button("Pair Locomotive") && _currentLoco is not null && !Locos.Contains(_currentLoco.Value))
             {
