@@ -2,8 +2,7 @@ name: Build, Package, and Add Release Asset
 
 on:
   release:
-    types:
-      - created  # Trigger the action when a new release is created
+    types: [created, published, released]  # Trigger the action when a new release is created
 
 jobs:
   build_package_upload:
