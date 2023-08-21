@@ -10,5 +10,6 @@
             "path": "dvNoCableMU.csproj",
             "xpath": "//Project/PropertyGroup/Version"
         }
-    ]
+    ],
+    ".": "1.0.0"
 }
