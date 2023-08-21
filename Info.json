@@ -3,7 +3,9 @@
   "DisplayName": "No Cable MU",
   "Author": "Sophon96",
   "Version": "0.1.0",
+  "HomePage": "https://github.com/Sophon96/dvNoCableMU",
   "AssemblyName": "dvNoCableMU.dll",
   "EntryMethod": "dvNoCableMU.Plugin.Load",
-  "ManagerVersion": "0.27.3"
+  "ManagerVersion": "0.27.3",
+  "Repository": "https://raw.githubusercontent.com/Sophon96/dvNoCableMU/master/kingmaker/Repository.json"
 }
