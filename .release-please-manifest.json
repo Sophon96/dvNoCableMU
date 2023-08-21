@@ -1,14 +1,1 @@
-{
-    "extra-files": [
-        {
-            "type": "json",
-            "path": "Info.json",
-            "jsonpath": "$.Version"
-        },
-        {
-            "type": "xml",
-            "path": "dvNoCableMU.csproj",
-            "xpath": "//Project/PropertyGroup/Version"
-        }
-    ]
-}
+{".":"1.0.0"}
