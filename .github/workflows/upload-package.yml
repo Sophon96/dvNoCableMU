@@ -1,8 +1,12 @@
 name: Build, Package, and Add Release Asset
 
 on:
-  release:
-    types: [created, published, released]  # Trigger the action when a new release is created
+  release:  # Trigger the action when a new release is created
+    types: 
+      - created
+      - published
+      - released
+  workflow_dispatch:
 
 jobs:
   build_package_upload:
