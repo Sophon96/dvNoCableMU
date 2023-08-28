@@ -17,6 +17,11 @@
                     "type": "json",
                     "path": "repository.json",
                     "jsonpath": "$.Releases.0.Version"
+                },
+                {
+                    "type": "json",
+                    "path": "repository.json",
+                    "jsonpath": "$.Releases.0.DownloadUrl"
                 }
             ]
         }
