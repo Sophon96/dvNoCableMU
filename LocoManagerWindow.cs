@@ -265,8 +265,14 @@ public class LocoManagerWindow : MonoBehaviour
 
     private void OnFirstLocoTrainsetChanged(Trainset trainset)
     {
-        _locos.RemoveAll(loco => !trainset.cars.Exists(x => x.CarGUID == loco.loco.GUID));
-
+        for (int i = _locos.Count - 1; i >= 0; i--)
+        {
+            if (!trainset.cars.Exists(x => x.CarGUID == _locos[i].loco.GUID))
+            {
+                StartCoroutine(RemoveLoco(_locos[i]));
+            }
+        }
+        
         // Possible that player connected the locomotive they're standing in
         // without leaving the locomotive (e.g. using driving UI), so just check again
         OnCarChanged(PlayerManager.Car);

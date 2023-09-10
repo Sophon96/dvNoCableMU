@@ -23,7 +23,7 @@ public class LocoWrapper: IEquatable<LocoWrapper>
     public event Action<Trainset> TrainsetChanged
     {
         add => _loco.TrainsetChanged += value;
-        remove => _loco.TrainsetChanged += value;
+        remove => _loco.TrainsetChanged -= value;
     }
 
 
