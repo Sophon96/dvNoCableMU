@@ -2,7 +2,7 @@
   "Id": "Sophon96.dvNoCableMU",
   "DisplayName": "No Cable MU",
   "Author": "Sophon96",
-  "Version": "1.0.0",
+  "Version": "1.0.1",
   "HomePage": "https://github.com/Sophon96/dvNoCableMU",
   "AssemblyName": "dvNoCableMU.dll",
   "EntryMethod": "dvNoCableMU.Plugin.Load",
