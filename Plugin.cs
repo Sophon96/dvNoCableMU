@@ -32,10 +32,15 @@ public static class Plugin
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
         _logger.Log("Added game loaded event handlers.");
 
+        // Create the GameObject for the UI. We want it to be maintained through
+        // scene changes and we want the LocoManagerWindow component to start 
+        // disabled because it should only be enabled once loaded into a game session.
         _gameObject = new GameObject("NoCableMUWindowDummy");
         Object.DontDestroyOnLoad(_gameObject);
+        _gameObject.SetActive(false);
         _locoManagerWindow = _gameObject.AddComponent<LocoManagerWindow>();
         _locoManagerWindow.enabled = false;
+        _gameObject.SetActive(true);
         _logger.Log("Added locomotive manager window.");
 
         _logger.Log($"Plugin {modEntry.Info.Id} is loaded!");
