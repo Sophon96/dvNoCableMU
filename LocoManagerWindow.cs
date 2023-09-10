@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DV.ThingTypes;
+using DV.Utils;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -22,6 +23,7 @@ public class LocoManagerWindow : MonoBehaviour
     private void OnEnable()
     {
         PlayerManager.CarChanged += OnCarChanged;
+        SingletonBehaviour<CarSpawner>.Instance.CarAboutToBeDeleted += OnLocoDestroyed;
         if (PlayerManager.Car is not null &&
             PlayerManager.Car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
         {
@@ -36,6 +38,7 @@ public class LocoManagerWindow : MonoBehaviour
     private void OnDisable()
     {
         PlayerManager.CarChanged -= OnCarChanged;
+        SingletonBehaviour<CarSpawner>.Instance.CarAboutToBeDeleted -= OnLocoDestroyed;
         _currentLoco = null;
         _statusMessage = "Plugin is unloaded (this message should not be seen)";
 
@@ -276,6 +279,11 @@ public class LocoManagerWindow : MonoBehaviour
         // Possible that player connected the locomotive they're standing in
         // without leaving the locomotive (e.g. using driving UI), so just check again
         OnCarChanged(PlayerManager.Car);
+    }
+
+    private void OnLocoDestroyed(TrainCar loco)
+    {
+        StartCoroutine(RemoveLoco(_locos.Find(x => x.loco.GUID == loco.CarGUID)));
     }
 
     private static bool IsTrainCarRelativelyReversed(Coupler[] couplers, TrainCar target)
