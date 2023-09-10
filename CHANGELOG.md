@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.1](https://github.com/Sophon96/dvNoCableMU/compare/v1.0.0...v1.0.1) (2023-09-10)
+
+
+### Bug Fixes
+
+* correct url for repository.json ([b14e854](https://github.com/Sophon96/dvNoCableMU/commit/b14e854bacb641dbb6b2aacde50c87f180799810))
+* Decoupling paired locomotives causes them to still be synced ([1887b07](https://github.com/Sophon96/dvNoCableMU/commit/1887b07b4e8fbb0d4375cb73013461b95fa6e6ee))
+* Locomotive stuck in broken/limbo state if cleared via Comms. Radio while paired ([703929d](https://github.com/Sophon96/dvNoCableMU/commit/703929d1e4342f56caaa56ef8b935bb237910a08))
+* Null references when loading the plugin ([1e51f43](https://github.com/Sophon96/dvNoCableMU/commit/1e51f43d7aba325008d5ddd6c8843248f0cced68))
+
 ## [1.0.0](https://github.com/Sophon96/dvNoCableMU/compare/v1.0.0...v1.0.0) (2023-08-21)
 
 
