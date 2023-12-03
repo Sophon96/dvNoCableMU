@@ -14,6 +14,8 @@ public class LocoManagerWindow : MonoBehaviour
     private readonly List<(LocoWrapper loco, bool reversed)> _locos = new();
     private readonly UnityModManager.ModEntry.ModLogger _logger = new(typeof(LocoManagerWindow).ToString());
 
+    private Rect _windowRect = new(20, 20, 300, 0);
+
     private (LocoWrapper loco, bool reversed)? _currentLoco;
 
     private string _statusMessage = "Unset (this shouldn't ever be seen)";
@@ -58,7 +60,7 @@ public class LocoManagerWindow : MonoBehaviour
 
     private void OnGUI()
     {
-        GUILayout.Window(9600001, _windowRect, DrawWindow, "No Cable MU");
+        _windowRect = GUILayout.Window(9600001, _windowRect, DrawWindow, "No Cable MU");
     }
 
     private void DrawWindow(int id)
