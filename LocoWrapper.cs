@@ -1,6 +1,7 @@
 ﻿using System;
 using DV.Simulation.Cars;
 using DV.ThingTypes;
+using LocoSim.Definitions;
 using LocoSim.Implementations;
 
 namespace dvNoCableMU;
@@ -16,6 +17,12 @@ public class LocoWrapper: IEquatable<LocoWrapper>
     private readonly SimulationFlow _simFlow;
     
     private readonly Port _tempPort;
+
+    private bool _hasDynBrake = false, _hasCylCocks = false, _hasGearbox = false;
+
+    private readonly Port? _cylCocksPort;
+    // I don't know if we *have* to use the out ports.
+    private readonly Port? _gearAInPort, _gearBInPort;
 
     public TrainCarType Type { get; }
     public Trainset Trainset { get; private set; }
@@ -48,16 +55,32 @@ public class LocoWrapper: IEquatable<LocoWrapper>
                 _simFlow.TryGetPort("tmHeat.TEMPERATURE", out _tempPort);
                 break;
 
+            case TrainCarType.LocoDM3:
+                _hasGearbox = true;
+                _simFlow.TryGetPort("gearInputA.CONTROL_EXT_IN", out _gearAInPort);
+                _simFlow.TryGetPort("gearInputB.CONTROL_EXT_IN", out _gearBInPort);
+                goto case TrainCarType.LocoDH4;
+
             case TrainCarType.LocoDH4:
                 _simFlow.TryGetPort("coolant.TEMPERATURE", out _tempPort);
                 break;
-
+            
+            case TrainCarType.LocoS060:
+            case TrainCarType.LocoSteamHeavy:
+                _tempPort = new Port("",
+                    new PortDefinition(PortType.READONLY_OUT, PortValueType.TEMPERATURE, "asdlkfjasdfjoiwer"));
+                _simFlow.TryGetPort("cylinderCock.EXT_IN", out _cylCocksPort);
+                _hasCylCocks = true;
+                break;
+            
             default:
                 // TODO: LOG ERROR
                 // very bad happened
                 throw new ArgumentOutOfRangeException(nameof(loco.carType),
                     "Unrecognized locomotives type! Got type \"" + loco.carType + '"');
         }
+
+        _hasDynBrake = controlsOverrider.DynamicBrake != null;
     }
 
     public bool Equals(LocoWrapper? other)
@@ -148,12 +171,12 @@ public class LocoWrapper: IEquatable<LocoWrapper>
     {
         get
         {
-            if (controlsOverrider.DynamicBrake != null) return controlsOverrider.DynamicBrake.Value;
+            if (_hasDynBrake) return controlsOverrider.DynamicBrake.Value;
             return -1;
         }
         set
         {
-            if (controlsOverrider.DynamicBrake != null) controlsOverrider.DynamicBrake.Set(value);
+            if (_hasDynBrake) controlsOverrider.DynamicBrake.Set(value);
         }
     }
     
@@ -161,11 +184,88 @@ public class LocoWrapper: IEquatable<LocoWrapper>
     {
         add
         {
-            if (controlsOverrider.DynamicBrake != null) controlsOverrider.DynamicBrake.ControlUpdated += value;
+            if (_hasDynBrake) controlsOverrider.DynamicBrake.ControlUpdated += value;
         }
         remove
         {
-            if (controlsOverrider.DynamicBrake != null) controlsOverrider.DynamicBrake.ControlUpdated -= value;
+            if (_hasDynBrake) controlsOverrider.DynamicBrake.ControlUpdated -= value;
+        }
+    }
+
+    public float CylCocks
+    {
+        get
+        {
+            // The locomotive shouldn't lose or grow cylinder cocks so the value
+            // from the constructor should be fine.
+            if (_hasCylCocks) return _cylCocksPort!.Value;
+            return -1;
+        }
+        set
+        {
+            if (_hasCylCocks) _cylCocksPort!.ExternalValueUpdate(value);
+        }
+    }
+    
+    public event Action<float> CylCocksUpdated
+    {
+        add
+        {
+            if (_hasCylCocks) _cylCocksPort!.ValueUpdatedInternally += value;
+        }
+        remove
+        {
+            if (_hasCylCocks) _cylCocksPort!.ValueUpdatedInternally -= value;
+        }
+    }
+
+    public float GearA
+    {
+        get
+        {
+            if (_hasGearbox) return _gearAInPort!.Value;
+            return -1;
+        }
+        set
+        {
+            if (_hasGearbox) _gearAInPort!.ExternalValueUpdate(value);
+        }
+    }
+    
+    public event Action<float> GearAUpdated
+    {
+        add
+        {
+            if (_hasGearbox) _gearAInPort!.ValueUpdatedInternally += value;
+        }
+        remove
+        {
+            if (_hasGearbox) _gearAInPort!.ValueUpdatedInternally -= value;
+        }
+    }
+    
+    public float GearB
+    {
+        get
+        {
+            if (_hasGearbox) return _gearBInPort!.Value;
+            return -1;
+        }
+        set
+        {
+            if (_hasGearbox) _gearBInPort!.ExternalValueUpdate(value);
+        }
+    }
+    
+    public event Action<float> GearBUpdated
+    {
+        add
+        {
+            if (_hasGearbox) _gearBInPort!.ValueUpdatedInternally += value;
+        }
+        remove
+        {
+            if (_hasGearbox) _gearBInPort!.ValueUpdatedInternally -= value;
         }
     }
 }

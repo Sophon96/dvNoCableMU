@@ -14,19 +14,26 @@ public static class Plugin
     private static LocoManagerWindow _locoManagerWindow = null!;
     private static GameObject _gameObject = null!;
 
+    public static Settings Settings = null!;
+
     [UsedImplicitly]
     public static bool Load(UnityModManager.ModEntry modEntry)
     {
         _logger = modEntry.Logger;
 
-        #if DEBUG
+#if DEBUG
         modEntry.OnUnload = OnModUnload;
         _logger.Log("Enabled mod reloading.");
-        #endif
+#endif
 
         var harmony = new Harmony(modEntry.Info.Id);
         harmony.PatchAll();
         _logger.Log("Patched absolutely nothing.");
+
+        Settings = UnityModManager.ModSettings.Load<Settings>(modEntry);
+        modEntry.OnGUI += OnGUI;
+        modEntry.OnSaveGUI += OnSaveGUI;
+        _logger.Log("Loaded settings and registered settings GUI event handlers.");
 
         WorldStreamingInit.LoadingFinished += OnLoadingFinished;
         UnloadWatcher.UnloadRequested += OnUnloadRequested;
@@ -48,18 +55,28 @@ public static class Plugin
         return true;
     }
 
-    #if DEBUG
+    private static void OnGUI(UnityModManager.ModEntry modEntry)
+    {
+        Settings.Draw(modEntry);
+    }
+
+    private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
+    {
+        Settings.Save(modEntry);
+    }
+
+#if DEBUG
     private static bool OnModUnload(UnityModManager.ModEntry modEntry)
     {
         var harmony = new Harmony(modEntry.Info.Id);
         harmony.UnpatchAll();
-        
+
         Object.Destroy(_gameObject);
         WorldStreamingInit.LoadingFinished -= OnLoadingFinished;
         UnloadWatcher.UnloadRequested -= OnUnloadRequested;
         return true;
     }
-    #endif
+#endif
 
     private static void OnLoadingFinished()
     {

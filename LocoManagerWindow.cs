@@ -20,14 +20,27 @@ public class LocoManagerWindow : MonoBehaviour
 
     private string _statusMessage = "Unset (this shouldn't ever be seen)";
 
-    private readonly Rect _windowRect = new(20, 20, 300, 0);
+    private void Start()
+    {
+        Plugin.Settings.SettingsChanged += OnModSettingsChanged;
+    }
+
+    private void OnModSettingsChanged(SettingsValues settings)
+    {
+        for (var i = _locos.Count - 1; i >= 0; i--)
+        {
+            if ((!settings.EnableSteamMU &&
+                 _locos[i].loco.Type is TrainCarType.LocoSteamHeavy or TrainCarType.LocoS060) ||
+                (!settings.EnableMechanicalMU && _locos[i].loco.Type is TrainCarType.LocoDM3))
+                StartCoroutine(RemoveLoco(_locos[i]));
+        }
+    }
 
     private void OnEnable()
     {
         PlayerManager.CarChanged += OnCarChanged;
         SingletonBehaviour<CarSpawner>.Instance.CarAboutToBeDeleted += OnLocoDestroyed;
-        if (PlayerManager.Car is not null &&
-            PlayerManager.Car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
+        if (PlayerManager.Car is not null && CheckLocoType(PlayerManager.Car))
         {
             _currentLoco = (new LocoWrapper(PlayerManager.Car), false);
             _logger.Log($"Started gaming with a locomotive. GUID: {_currentLoco.Value.loco.GUID}; " +
@@ -132,6 +145,9 @@ public class LocoManagerWindow : MonoBehaviour
             loco.reversed ? OnLocoReverserValueUpdatedReversed : OnLocoReverserValueUpdatedNormal;
         loco.loco.SanderValueUpdated -= OnLocoSanderValueUpdated;
         loco.loco.DynBrakeValueUpdated -= OnLocoDynBrakeValueUpdated;
+        loco.loco.CylCocksUpdated -= OnLocoCylCocksValueUpdated;
+        loco.loco.GearAUpdated -= OnLocoGearAValueUpdated;
+        loco.loco.GearBUpdated -= OnLocoGearBValueUpdated;
         yield return null;
 
         if (_locos.IndexOf(loco) != 0) yield break;
@@ -157,6 +173,9 @@ public class LocoManagerWindow : MonoBehaviour
             reversed ? OnLocoReverserValueUpdatedReversed : OnLocoReverserValueUpdatedNormal;
         targetLoco.SanderValueUpdated += OnLocoSanderValueUpdated;
         targetLoco.DynBrakeValueUpdated += OnLocoDynBrakeValueUpdated;
+        targetLoco.CylCocksUpdated += OnLocoCylCocksValueUpdated;
+        targetLoco.GearAUpdated += OnLocoGearAValueUpdated;
+        targetLoco.GearBUpdated += OnLocoGearBValueUpdated;
         yield return null;
 
         // Reset all controls
@@ -175,6 +194,7 @@ public class LocoManagerWindow : MonoBehaviour
             x.loco.Sander = 0;
             x.loco.Brake = maxBrake;
             x.loco.IndBrake = maxIndBrake;
+            // TODO: reset gears and cylinder cocks here
         });
         yield return null;
 
@@ -220,6 +240,22 @@ public class LocoManagerWindow : MonoBehaviour
         _locos.ForEach(x => x.loco.Throttle = f);
     }
 
+    private void OnLocoCylCocksValueUpdated(float f)
+    {
+        if (Plugin.Settings.EnableCylCocks)
+            _locos.ForEach(x => x.loco.CylCocks = f);
+    }
+
+    private void OnLocoGearAValueUpdated(float f)
+    {
+        _locos.ForEach(x => x.loco.GearA = f);
+    }
+
+    private void OnLocoGearBValueUpdated(float f)
+    {
+        _locos.ForEach(x => x.loco.GearB = f);
+    }
+
     private void OnCarChanged(TrainCar? car)
     {
         if (car is null)
@@ -228,7 +264,7 @@ public class LocoManagerWindow : MonoBehaviour
             _statusMessage = _locos.Count > 0 ? "Active" : "Inactive";
             _logger.Log("Loco changed to null.");
         }
-        else if (car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4)
+        else if (CheckLocoType(car))
         {
             // No locomotives registered.
             if (_locos.Count == 0)
@@ -268,16 +304,20 @@ public class LocoManagerWindow : MonoBehaviour
         }
     }
 
+    private static bool CheckLocoType(TrainCar car)
+    {
+        return car.carType is TrainCarType.LocoShunter or TrainCarType.LocoDiesel or TrainCarType.LocoDH4 ||
+               (Plugin.Settings.EnableSteamMU &&
+                car.carType is TrainCarType.LocoSteamHeavy or TrainCarType.LocoS060) ||
+               (Plugin.Settings.EnableMechanicalMU && car.carType is TrainCarType.LocoDM3);
+    }
+
     private void OnFirstLocoTrainsetChanged(Trainset trainset)
     {
-        for (int i = _locos.Count - 1; i >= 0; i--)
-        {
+        for (var i = _locos.Count - 1; i >= 0; i--)
             if (!trainset.cars.Exists(x => x.CarGUID == _locos[i].loco.GUID))
-            {
                 StartCoroutine(RemoveLoco(_locos[i]));
-            }
-        }
-        
+
         // Possible that player connected the locomotive they're standing in
         // without leaving the locomotive (e.g. using driving UI), so just check again
         OnCarChanged(PlayerManager.Car);
