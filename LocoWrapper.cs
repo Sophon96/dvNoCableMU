@@ -68,7 +68,7 @@ public class LocoWrapper: IEquatable<LocoWrapper>
             case TrainCarType.LocoS060:
             case TrainCarType.LocoSteamHeavy:
                 _tempPort = new Port("",
-                    new PortDefinition(PortType.READONLY_OUT, PortValueType.TEMPERATURE, "asdlkfjasdfjoiwer"));
+                    new PortDefinition(PortType.READONLY_OUT, PortValueType.TEMPERATURE, "nocablemufake"));
                 _simFlow.TryGetPort("cylinderCock.EXT_IN", out _cylCocksPort);
                 _hasCylCocks = true;
                 break;
