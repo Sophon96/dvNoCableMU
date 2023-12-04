@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/Sophon96/dvNoCableMU/compare/v1.0.1...v1.1.0) (2023-12-04)
+
+
+### Features
+
+* add ability to sync DM3 gearbox and cylinder cocks, add settings to enable non-standard MU ([b79cb05](https://github.com/Sophon96/dvNoCableMU/commit/b79cb0586f52feec112ef54c887d748c29419001))
+* make window actually draggable ([398b846](https://github.com/Sophon96/dvNoCableMU/commit/398b846f36c240e6fc9bfd37169d6beee02a7376))
+
 ## [1.0.1](https://github.com/Sophon96/dvNoCableMU/compare/v1.0.0...v1.0.1) (2023-09-10)
 
 
